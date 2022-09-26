@@ -8,7 +8,7 @@ public class MailContainer
 
     public int Capacity { get; set; }
 
-    public string MailContainerNumber { get; set; }
+    public string MailContainerNumber { get; set; } = string.Empty;
 
     public MailContainerStatus Status { get; set; }
 }
