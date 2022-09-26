@@ -3,17 +3,22 @@
 using MailContainerTest.Application.ExtensionMethods;
 using MailContainerTest.Application.Interfaces;
 using MailContainerTest.Application.Models;
+using MailContainerTest.Domain;
 using MailContainerTest.Domain.Enums;
+
+using Microsoft.Extensions.Logging;
 
 public class MailTransferService : IMailTransferService
 {
+    private readonly ILogger<MailTransferService> _logger;
     private readonly IMailContainerDataStore _mailContainerDataStore;
     private readonly IValidator<MakeMailTransferRequest> _validator;
 
-    public MailTransferService(IMailContainerDataStore mailContainerDataStore, IValidator<MakeMailTransferRequest> validator)
+    public MailTransferService(IMailContainerDataStore mailContainerDataStore, IValidator<MakeMailTransferRequest> validator, ILogger<MailTransferService> logger)
     {
         _mailContainerDataStore = mailContainerDataStore;
         _validator = validator;
+        _logger = logger;
     }
 
     public MakeMailTransferResult MakeMailTransfer(MakeMailTransferRequest request)
@@ -24,18 +29,39 @@ public class MailTransferService : IMailTransferService
         if (!validationResult.Success)
             return new MakeMailTransferResult() { Success = validationResult.Success };
 
-        //check if containers exists
-        var mailContainer = _mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
+        var sourceMailContainer = _mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
+        var destinationMailContainer = _mailContainerDataStore.GetMailContainer(request.DestinationMailContainerNumber);
 
-        if (mailContainer is null)
+        var containersValidationResult = ValidateContainers(request, sourceMailContainer, destinationMailContainer);
+
+        if (!containersValidationResult)
             return new MakeMailTransferResult() { Success = false };
 
-        if (!mailContainer.AcceptsMailType(request.MailType))
+        try
+        {
+            sourceMailContainer.Capacity -= request.NumberOfMailItems;
+            _mailContainerDataStore.UpdateMailContainer(sourceMailContainer);
+
+            destinationMailContainer.Capacity += request.NumberOfMailItems;
+            _mailContainerDataStore.UpdateMailContainer(destinationMailContainer);
+
+            return new MakeMailTransferResult() { Success = true };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An exception occurred");
+
             return new MakeMailTransferResult() { Success = false };
+        }
+    }
 
+    private static bool ValidateContainers(MakeMailTransferRequest request, MailContainer source, MailContainer destination)
+    {
+        if (source is null || destination is null)
+            return false;
 
-
-        var result = new MakeMailTransferResult();
+        if (!destination.AcceptsMailType(request.MailType))
+            return false;
 
         switch (request.MailType)
         {
@@ -43,27 +69,15 @@ public class MailTransferService : IMailTransferService
                 break;
 
             case MailType.LargeLetter:
-                if (mailContainer.Capacity < request.NumberOfMailItems)
-                {
-                    result.Success = false;
-                }
-                break;
+                return destination.HasCapacity(request.NumberOfMailItems);
 
             case MailType.SmallParcel:
-                if (mailContainer.Status != MailContainerStatus.Operational)
-                {
-                    result.Success = false;
-                }
+                return destination.IsOperational();
+
+            default:
                 break;
         }
 
-        if (result.Success)
-        {
-            mailContainer.Capacity -= request.NumberOfMailItems;
-
-            _mailContainerDataStore.UpdateMailContainer(mailContainer);
-        }
-
-        return result;
+        return true;
     }
 }

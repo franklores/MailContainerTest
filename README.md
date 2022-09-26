@@ -1,3 +1,15 @@
+### Refactorings
+- Reorganised code to clean architecture pattern
+- Added interfaces for the data stores
+- Added interfaces for validators
+- Added interfaces for data store factory
+- Added extension methods to validate MailContainer properties
+- Added unit tests for validator
+- Added unit tests for factory
+- Added unit test for MailContainer validators
+- Added dependency injection for all dependencies
+
+
 ### Mail Container Test 
 
 The code for this exercise has been developed to manage the transfer of mail items from one container to another for processing.

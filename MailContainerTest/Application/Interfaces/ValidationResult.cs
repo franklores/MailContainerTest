@@ -10,7 +10,7 @@ public struct ValidationResult
         Errors = new List<string>();
     }
 
-    public bool Success => Errors.Any();
+    public bool Success => !Errors.Any();
 
     public List<string> Errors { get; }
 }

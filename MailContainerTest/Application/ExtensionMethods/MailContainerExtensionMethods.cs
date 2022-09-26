@@ -14,6 +14,9 @@ public static class MailContainerExtensionMethods
         _ => false,
     };
 
-    public static bool IsInValidState(this MailContainer mailContainer)
+    public static bool IsOperational(this MailContainer mailContainer)
     => mailContainer.Status == MailContainerStatus.Operational;
+
+    public static bool HasCapacity(this MailContainer mailContainer, int items)
+    => mailContainer.Capacity >= items;
 }
