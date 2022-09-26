@@ -9,6 +9,10 @@
 - Added unit test for MailContainer validators
 - Added dependency injection for all dependencies
 
+### Issues and suggested changes
+- AllowedMailTypes using bit based comparison, SmallParcel allows for Large and Standard Letter, this is a bug as per requirements
+- Suggestion to create classes for the mail types instead of enums and apply DDD state validation to the classes, alternatively add validator for each of the mail types
+- Validation seems to be done on the source container only not the destination container, this is a bug as per requirements
 
 ### Mail Container Test 
 
